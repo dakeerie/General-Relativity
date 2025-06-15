@@ -14,8 +14,8 @@ def lorentz_boost(v, event):
     barred_coordinates = np.zeros(4)
     gamma = lorentz_factor(v)
 
-    barred_coordinates[0] = gamma*t - gamma*v*x
-    barred_coordinates[1] = -gamma*v*t + gamma*x
+    barred_coordinates[0] = gamma*(t - v*x)
+    barred_coordinates[1] = gamma*(-v*t + x)
     barred_coordinates[2] = y #y and z coordinates the same for boost in x direction alone
     barred_coordinates[3] = z
 

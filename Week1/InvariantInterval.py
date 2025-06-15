@@ -1,5 +1,5 @@
 import numpy as np
-from LorentzBoost import lorentz_boost, lorentz_factor
+from Week1.LorentzBoost import lorentz_boost, lorentz_factor
 
 #Minkowski metric
 eta = np.diag([-1, 1, 1, 1])
