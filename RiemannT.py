@@ -1,4 +1,4 @@
-from test import function
+from Week1.test import function
 from ChristoffelSymbols import *
 # IMPORTING FUNCTIONS NEEDS WORK!!
 
