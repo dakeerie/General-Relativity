@@ -22,3 +22,6 @@ sq = np.array([[1, 2, 0], [2, 1, 0], [0, 0, 2]])
 print(np.linalg.inv(sq))
 print(np.matmul(sq, np.linalg.inv(sq)))
 print(np.matmul(sq, np.identity(3), np.linalg.inv(sq)))
+
+
+print(sq @ np.linalg.inv(sq) @ sq)
