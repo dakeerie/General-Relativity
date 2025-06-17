@@ -1,5 +1,5 @@
 from Week1.test import function
-from ChristoffelSymbols import *
+from Misc.ChristoffelSymbols import *
 # IMPORTING FUNCTIONS NEEDS WORK!!
 
 import sympy as sp
