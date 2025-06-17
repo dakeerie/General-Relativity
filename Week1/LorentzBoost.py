@@ -26,9 +26,45 @@ def lorentz_boost(v, event):
     
     return barred_event
 
-test = np.array([1, 1, 1, 1])
-barred = lorentz_boost(0.5, test)
-print(barred)
+if __name__ == "__main__":
+    test = np.array([1, 1, 1, 1])
+    barred = lorentz_boost(0.5, test)
+    print(barred)
+else:
+    print("lorentz_boost and lorentz_factor were imported.")
+
+
+
+#Arbitrary direction velocity boost
+def lorentz_factor_arb(v_vec):
+    mag = np.linalg.norm(v_vec)
+    return 1/np.sqrt(1-v_vec**2)
+
+def lorentz_boost_arb(v_vec, event):
+    #Rapidity
+    beta = np.array(v_vec)
+    beta_mag = np.linalg.norm(beta)
+    if beta_mag >= 1:
+        raise ValueError("Speed must be less than the speed of light ie |v|<1 when expressed in natural units")
+
+    gamma = lorentz_factor_arb(beta)
+    t, x, y, z = event
+    position_vec = np.array([x, y, z])
+
+    boost_matrix = np.eye(4)
+    boost_matrix[0, 0] = gamma
+    boost_matrix[0, 1:4] = -gamma*beta
+    boost_matrix[1:4, 0] = -gamma*beta
+
+    outer = np.outer(beta, beta)
+    if beta_mag > 0:
+        boost_matrix[1:4, 1:4] += ((gamma-1)/beta_mag**2)*outer
+
+    return boost_matrix @ event
+
+
+
+
 
 
 
