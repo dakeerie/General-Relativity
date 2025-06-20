@@ -4,7 +4,7 @@ c = const.speed_of_light
 
 def lorentz_factor(v):
     #v in natural units
-    gamma = (1-v**2)**(-1/2)
+    gamma = 1/np.sqrt(1-v**2)
     return gamma
 
 def lorentz_boost(v, event):

@@ -1,4 +1,5 @@
 import numpy as np
+import sympy
 
 def function(x):
     print(x)
@@ -25,3 +26,16 @@ print(np.matmul(sq, np.identity(3), np.linalg.inv(sq)))
 
 
 print(sq @ np.linalg.inv(sq) @ sq)
+
+x = ('apple', 'banana')
+for index, fruit in enumerate(x):
+    print(index)
+
+
+x, y = sympy.symbols('x y')
+gamma, v = sympy.symbols('gamma v')
+lt = np.array([[gamma, -gamma*v], [-gamma*v, gamma]])
+
+tp, xp = lt @ np.array([x,y])
+
+print(tp, xp)
