@@ -184,6 +184,7 @@ def minkowski_diagram(events, vs, frame, size, hyperbolae = False, event_coordin
     plt.show()
 
     print(all_coords)
+    print(len(all_coords))
 
 tester = [[0, 4], [3, 1], [-3, -2]]
 
@@ -193,7 +194,8 @@ minkowski_diagram(tester, tester_v, 1, 8, False, True)
 
 #LABELS AND AXIS CONNECTOR LINES!!
 
-
+#ALL_COORDS INCORRECT
+#AXIS CONNECTOR LINES
         
 
 
