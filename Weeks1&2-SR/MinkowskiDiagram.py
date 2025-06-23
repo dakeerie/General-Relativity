@@ -117,6 +117,14 @@ test = [[0, 1], [1, 4]]
 def minkowski_diagram(events, vs, frame, size, hyperbolae = False, event_coordinates = False):
     fig, ax = plt.subplots(figsize = [6,6])
 
+
+    step = 2  # or 1 or any appropriate value
+    xticks = np.arange(-size, size + 1, step)
+    yticks = np.arange(-size, size + 1, step)
+    xtick_labels = [str(x) if x != 0 else '' for x in xticks]
+    ytick_labels = [str(y) if y != 0 else '' for y in yticks]
+    plt.xticks(xticks, xtick_labels)
+    plt.yticks(yticks, ytick_labels)
     ax.set_xlim(-size, size)
     ax.set_ylim(-size, size)
     ax.spines['left'].set_position('center')
@@ -127,6 +135,7 @@ def minkowski_diagram(events, vs, frame, size, hyperbolae = False, event_coordin
     ax.yaxis.set_ticks_position('left')
     ax.set_xlabel(r'$x_0$', loc='right', fontname = 'DejaVu Sans')
     ax.set_ylabel(r'$t_0$', rotation=0, loc='top', fontname = 'DejaVu Sans')
+    plt.text(-0.4, -0.4, 'O', ha='center', va='center', fontsize=12, zorder = 15, weight = 'bold')
 
     c = np.linspace(-size, size, 100)
 
@@ -148,20 +157,19 @@ def minkowski_diagram(events, vs, frame, size, hyperbolae = False, event_coordin
     for l in range(len(vs)):
         v = vs[l]
         if np.abs(v) <= 1:
-            plt.plot(c, c/v, linestyle = ':', color = 'k') # t' axis has x' = 0
-            plt.plot(c, v*c, linestyle = ':', color = 'k') # x' axis has t' = 0
+            plt.plot(c, c/v, linestyle = ':', color = 'k', zorder = 15) # t' axis has x' = 0
+            plt.plot(c, v*c, linestyle = ':', color = 'k', zorder = 15) # x' axis has t' = 0
             plt.text(size, v*size, fr"$x'_{{{l + 1}}}$")
             plt.text(v*size, size, fr"$t'_{{{l + 1}}}$")
 
             gamma = lorentz_factor(v)
             event_coords = []
-            for n in range(len(events)):
-                tp = gamma*events[n][0] - gamma*v*events[n][1]
-                xp = -gamma*v*events[n][0] + gamma*events[n][1]
+            for e in range(len(events)):
+                tp = gamma*events[e][0] - gamma*v*events[e][1]
+                xp = -gamma*v*events[e][0] + gamma*events[e][1]
                 primed = [tp, xp]
                 event_coords.append(primed)
-                all_coords.append(event_coords)
-
+            all_coords.append(event_coords)
         else:
             raise ValueError(f"velocity v={v} must satisfy |v| <= 1.")
     # print(all_coords)
@@ -189,13 +197,9 @@ def minkowski_diagram(events, vs, frame, size, hyperbolae = False, event_coordin
 tester = [[0, 4], [3, 1], [-3, -2]]
 
 tester_v = [0.5, 0.3]
-minkowski_diagram(tester, tester_v, 1, 8, False, True)
+minkowski_diagram(tester, tester_v, 2, 8, False, True)
         
-
-#LABELS AND AXIS CONNECTOR LINES!!
-
-#ALL_COORDS INCORRECT
-#AXIS CONNECTOR LINES
+#AXIS LINES CONNECTING TO POINTS
         
 
 
