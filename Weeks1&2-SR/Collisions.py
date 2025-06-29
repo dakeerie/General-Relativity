@@ -3,22 +3,23 @@ from LorentzBoost import lorentz_factor, lorentz_boost
 
 def four_momentum(m, v):
     #c = 1
-    gamma = lorentz_factor(np.linalg.norm(v))
+    v_array = np.array(v) if not isinstance(v, (int, float)) else np.array([v])
+
+    gamma = lorentz_factor(np.linalg.norm(v_array))
     E = gamma*m
-    if type(v) == float:
-        p = gamma*m*v
-        P = np.array([E, p])
-        return P
+
+    if isinstance(v, (int, float)):
+        p_vec = np.array([gamma*m*v, 0.0, 0.0]) #motion in x
     else:
-        velocity = np.array(v)
-        print(gamma*m)
-        px, py, pz = gamma*m*velocity[0:3]
-        P = np.array([E, px, py, pz])
-        return P
+        p_vec = gamma*m*v_array[:3]        
+    P = np.concatenate(([E], p_vec))
+        
+    return P
+
 
 #Two particle momenta
 
-vel = [0.1, 0.2, 0.3]
-# P1 = four_momentum(0.1, 0.5)
+vel = [0, 0, 0]
+P1 = four_momentum(0.1, 0.5)
 P2 = four_momentum(0.2, vel)
 print(P1, P2)
