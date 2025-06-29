@@ -4,7 +4,10 @@ c = const.speed_of_light
 
 def lorentz_factor(v):
     #v in natural units
-    gamma = 1/np.sqrt(1-v**2)
+    if np.linalg.norm(v) <= 1:
+        gamma = 1/np.sqrt(1-v**2)
+    else:
+        raise ValueError(f"velocity v={v} must satisfy |v| <= 1.")
     return gamma
 
 def lorentz_boost(v, event):
