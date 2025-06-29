@@ -38,7 +38,7 @@ lt = np.array([[gamma, -gamma*v], [-gamma*v, gamma]])
 
 tp, xp = lt @ np.array([x,y])
 
-print(tp, xp)
+print(tp,',', xp)
 
 empty = []
 a = [[0,1], [1,2]]
@@ -50,3 +50,17 @@ empty_new = [empty]
 empty_new.append(empty)
 empty_new.append([[0,1]])
 print(empty_new)
+
+
+a = np.array([0.3, 0.4, 0])
+b = np.array(a)
+print(b)
+print(0.3*b)
+print(np.linalg.norm(a))
+
+print(np.linalg.norm(a)*b)
+
+if type(a) == float or int:
+    print('y')
+else:
+    print('n')
