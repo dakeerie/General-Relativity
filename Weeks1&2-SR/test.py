@@ -64,3 +64,6 @@ if type(a) == float or int:
     print('y')
 else:
     print('n')
+
+x = [0, 1]
+print(len(x))
