@@ -74,22 +74,25 @@ import sympy
 
 # print(v_array)
 
-from einsteinpy.geodesic import Timelike
-from einsteinpy.plotting.geodesic import GeodesicPlotter, StaticGeodesicPlotter, InteractiveGeodesicPlotter
+# from einsteinpy.geodesic import Timelike
+# from einsteinpy.plotting.geodesic import GeodesicPlotter, StaticGeodesicPlotter, InteractiveGeodesicPlotter
 
-r0 = 9.346
-r1 = 12 #circular orbit
-r2 = 6
+# r0 = 9.346
+# r1 = 12 #circular orbit
+# r2 = 6
 
-X = [r0, np.pi/2, 0]
-P = [0, 0, 4]
-a = 0
-steps = 2500
-delta = 1
+# X = [r0, np.pi/2, 0]
+# P = [0, 0, 4]
+# a = 0
+# steps = 2500
+# delta = 1
 
-print(type(2.))
+# print(type(2.))
 
-geod = Timelike(metric = 'Schwarzschild', metric_params=(a,), position = X, momentum = P, steps = steps,
-                delta = delta, return_cartesian = True)
-print(geod)
+# geod = Timelike(metric = 'Schwarzschild', metric_params=(a,), position = X, momentum = P, steps = steps,
+# #                 delta = delta, return_cartesian = True)
+# print(geod)
+
+phi_span = [0, 10*np.pi]
+phi_eval = np.linspace(phi_span, 2000)
 
