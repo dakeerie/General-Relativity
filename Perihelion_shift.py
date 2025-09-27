@@ -1,11 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from einsteinpy.geodesic import Timelike
 from scipy.constants import G, c
 from scipy.integrate import solve_ivp
-from scipy.optimize import brentq
-from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
 
 def system(s, y, M, h):
@@ -42,6 +38,7 @@ mercury_solution = solve_ivp(
     y0 = u0, 
     method = 'RK45', 
     t_eval = phi_eval, 
+    dense_output = True,
     args = (M_geo, h_merc), 
     rtol = 1e-12, 
     atol = 1e-15)
