@@ -1,5 +1,7 @@
 import numpy as np
 import sympy
+from scipy.interpolate import interp1d
+from matplotlib import pyplot as plt
 
 # def function(x):
 #     print(x)
@@ -93,6 +95,26 @@ import sympy
 # #                 delta = delta, return_cartesian = True)
 # print(geod)
 
-phi_span = [0, 10*np.pi]
-phi_eval = np.linspace(phi_span, 2000)
+# phi_span = [0, 10*np.pi]
+# phi_eval = np.linspace(phi_span, 2000)
+
+# x = np.array([0, 1, 2, 3, 4, 5, 6, 7])
+# y = np.array([0, -1, 1, 2, 3, 5, 8, 9])
+
+# arr = np.array([0, 1, 0, -1, 0, 1])
+# sign = np.sign(arr)
+# sign[sign == 0] = 3
+# print(sign[0])
+
+# f = interp1d(x, y, kind = 'linear', bounds_error=False, fill_value="extrapolate")
+# largerx = np.linspace(0, 7, 100)
+# print(f, f(0.2))
+
+# plt.figure()
+# plt.scatter(x, y)
+# plt.scatter(largerx, f(largerx))
+# plt.show()
+
+
+
 
