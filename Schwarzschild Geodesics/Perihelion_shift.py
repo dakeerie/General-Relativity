@@ -43,6 +43,39 @@ mercury_solution = solve_ivp(
     rtol = 1e-12, 
     atol = 1e-15)
 
+from scipy.optimize import brentq
+
+sol = mercury_solution  # your solve_ivp result (dense_output=True)
+sol_cont = sol.sol      # callable: sol_cont(phi) -> y (2-vector)
+
+def dudphi_at(phi):
+    return sol_cont(phi)[1]   # y[1] is dudphi
+
+peri_phi = []
+for k in range(1, 4):
+    guess = k * 2*np.pi
+    left = guess - 5e-7
+    right = guess + 5e-7
+
+    # Check that dudphi changes sign inside the bracket
+    if np.sign(dudphi_at(left)) == np.sign(dudphi_at(right)):
+        # If no sign change, slightly shift bracket
+        left -= 1e-7
+        right += 1e-7
+
+    phi_root = brentq(dudphi_at, left, right, xtol=1e-14, rtol=1e-12)
+    peri_phi.append(phi_root)
+
+
+
+# precession per orbit (radians)
+delta_phi_meas = abs(peri_phi[1] - peri_phi[0] - 2*np.pi)
+delta_phi_arcsec = delta_phi_meas*180*3600/np.pi
+orbits_per_century = 100*365.25/87.969
+delta_phi_per_century = delta_phi_arcsec*orbits_per_century
+print(delta_phi_per_century)
+
+
 phi = mercury_solution.t
 u = mercury_solution.y[0]
 r = 1/u
@@ -50,12 +83,14 @@ x = r*np.cos(phi)
 y = r*np.sin(phi)
 dudphi = mercury_solution.y[1]
 
-minima_indices = find_peaks(-r)[0]
+#Determination of stationary points
+minima_indices = find_peaks(1/r)[0]
 stationary_phi = []
 for i in minima_indices:
     angle = phi[i]
     stationary_phi.append(angle)
 
+#Precession calculation
 precession_per_orbit_arcsec = np.abs(stationary_phi[1] - stationary_phi[0] - 2*np.pi)*(180*3600/np.pi)
 precession_per_century_arcsec = precession_per_orbit_arcsec*100*365.25/87.969
 print(precession_per_century_arcsec)
