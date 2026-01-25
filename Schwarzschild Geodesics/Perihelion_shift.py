@@ -1,109 +1,138 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import G, c
-from scipy.integrate import solve_ivp
 from scipy.signal import find_peaks
 
-def system(s, y, M, h):
-    #Matter particle equations
-    u, dudphi = y
-    q = dudphi
-    dq = -u + M/h**2 +3*M*u**2
-    return [q, dq]
+#Mercury-Sun system isn't relativistic enough to accurately calculate the precession
+#angle using RK4 so I'll make up a test system to show that the simulation works
+def dudphi(phi, u, w):
+    return w 
 
-def specific_am(M, a, e):
-    #Newtonian specific angular momentum calculation
-    #Works fine for Mercury as r >> 2M for Mercury-Sun system 
-    h_sq = M*a*(1-e**2)
-    return np.sqrt(h_sq)
+def dwdphi(phi, u, w, M: float, h: float, b):
+    """b = 1 for matter, b = 0 for light"""
+    return -u + b*M/h**2 + 3*M*u**2
 
-#Constants
-AU = 1.496e11 #m
-M_sun_kg = 1.989e30  # kg
-M_geo = G*M_sun_kg/c**2 #m, solar mass in geometrised units
-e_merc = 0.2056 #CHECK SOURCES
-a_merc = 0.387*AU #m CHECK SOURCES
-h_merc = specific_am(M_geo, a_merc, e_merc)
-peri_merc = a_merc*(1-e_merc)
+#RK4 solver for 2nd order differential equations
+def RK4_2nd(f, g, IC, x_final, n):
+    x = [IC[0]]
+    y = [IC[1]]
+    dy = [IC[2]]
+    dx = (x_final - x[0])/n
+    dx_2 = dx/2
+    for i in range(n):
+        xi, yi, dyi = x[i], y[i], dy[i]
+        k0 = dx*f(xi, yi, dyi)
+        l0 = dx*g(x[i], y[i], dy[i])
+        k1 = dx*f(x[i] + dx_2, y[i] + k0/2, dy[i] + l0/2)
+        l1 = dx*g(x[i] + dx_2, y[i] + k0/2, dy[i] + l0/2)
+        k2 = dx*f(x[i] + dx_2, y[i] + k1/2, dy[i] + l1/2)
+        l2 = dx*g(x[i] + dx_2, y[i] + k1/2, dy[i] + l1/2)
+        k3 = dx*f(x[i] + dx, y[i] + k2, dy[i] + l2)
+        l3 = dx*g(x[i] + dx, y[i] + k2, dy[i] + l2)
+        x.append(x[i] + dx)
+        y.append(y[i] + (k0 + 2*k1 + 2*k2 + k3)/6)
+        dy.append(dy[i] + (l0 + 2*l1 + 2*l2 + l3)/6)
+    return x, y, dy, dx
 
-#Integration parameters
-phi_span = [0, 8*np.pi]
-phi_eval = np.linspace(phi_span[0], phi_span[1], 800000)
-u0 = [1/peri_merc, 0] #start at perihelion where du/dphi = 0
+#Simulation parameters
+M = 1.0
+r0 = 50 #far enough away that the analytical phi prediction should match simulation value
+u0 = 1/r0 #but close enough that precession is resolvable by RK4 method
+h = 8 #stable orbit 
+orbits = 10
+b = 1
+#Analytical precession
+dphi_rad_analytical = 2*np.pi/(1 - 3*M**2/h**2) - 2*np.pi
 
-#Solve
-mercury_solution = solve_ivp(
-    system, 
-    t_span = phi_span, 
-    y0 = u0, 
-    method = 'RK45', 
-    t_eval = phi_eval, 
-    dense_output = True,
-    args = (M_geo, h_merc), 
-    rtol = 1e-12, 
-    atol = 1e-15)
+wrapped_dwdphi = lambda phi, u, w: dwdphi(phi, u, w, M, h, b)
+initial_conditions = [0.0, u0, 0.0]
+phi, u, du, dx = RK4_2nd(dudphi, wrapped_dwdphi, initial_conditions, x_final = 2*orbits*np.pi, n = 100000)
+phi = np.array(phi)
+u = np.array(u)
+du = np.array(du)
 
-from scipy.optimize import brentq
-
-sol = mercury_solution  # your solve_ivp result (dense_output=True)
-sol_cont = sol.sol      # callable: sol_cont(phi) -> y (2-vector)
-
-def dudphi_at(phi):
-    return sol_cont(phi)[1]   # y[1] is dudphi
-
-peri_phi = []
-for k in range(1, 4):
-    guess = k * 2*np.pi
-    left = guess - 5e-7
-    right = guess + 5e-7
-
-    # Check that dudphi changes sign inside the bracket
-    if np.sign(dudphi_at(left)) == np.sign(dudphi_at(right)):
-        # If no sign change, slightly shift bracket
-        left -= 1e-7
-        right += 1e-7
-
-    phi_root = brentq(dudphi_at, left, right, xtol=1e-14, rtol=1e-12)
-    peri_phi.append(phi_root)
-
-
-
-# precession per orbit (radians)
-delta_phi_meas = abs(peri_phi[1] - peri_phi[0] - 2*np.pi)
-delta_phi_arcsec = delta_phi_meas*180*3600/np.pi
-orbits_per_century = 100*365.25/87.969
-delta_phi_per_century = delta_phi_arcsec*orbits_per_century
-print(delta_phi_per_century)
-
-
-phi = mercury_solution.t
-u = mercury_solution.y[0]
 r = 1/u
 x = r*np.cos(phi)
 y = r*np.sin(phi)
-dudphi = mercury_solution.y[1]
 
-#Determination of stationary points
-minima_indices = find_peaks(1/r)[0]
-stationary_phi = []
-for i in minima_indices:
-    angle = phi[i]
-    stationary_phi.append(angle)
+# Maxima in u are minima in r ie perihelia
+peaks, _ = find_peaks(u)
+peaks = np.insert(peaks, 0, 0)
+if len(peaks) >= 2:
+    phi_peaks = phi[peaks]
+    dphi = np.diff(phi_peaks) - 2*np.pi
+    mean_precession = np.mean(dphi)
+    precession_std = np.std(dphi)
+    print('Precession')
+    print(f"Numerical precession: {mean_precession:.3f} rad +- {precession_std:.5f} rad")
+    print(f"Analytical precession: {dphi_rad_analytical:.3f} rad")
+    print(f"Difference: {np.abs(mean_precession - dphi_rad_analytical)*100/dphi_rad_analytical:.2f} %")
+else:
+    raise ValueError("Not enough perihelia found. Increase 'orbits' or make sure motion is bounded.")
 
-#Precession calculation
-precession_per_orbit_arcsec = np.abs(stationary_phi[1] - stationary_phi[0] - 2*np.pi)*(180*3600/np.pi)
-precession_per_century_arcsec = precession_per_orbit_arcsec*100*365.25/87.969
-print(precession_per_century_arcsec)
+#From the Schwarzschild metric and Lagrangian, the specific energy, E, should be conserved
+def specific_energy(u, du, M, h):
+    kinetic = h**2*(du)**2
+    potential = (1 + (h*u)**2)*(1 - 2*M*u)
+    return np.sqrt(kinetic + potential)
 
-plt.figure(figsize = (6, 6))
-plt.title('Mercury Orbit with GR Effects', fontsize = 20)
-plt.plot(x/AU, y/AU, color = 'gray', label = 'Mercury Trajectory')
-plt.scatter(0, 0, marker = 'o', zorder  = 10, s = 100, color = 'orange', label = 'Sun')
-plt.scatter(x[0]/AU, y[0]/AU, zorder = 10, s = 20, color = 'red', label = 'Initial')
-plt.scatter(x[-1]/AU, y[-1]/AU, zorder = 9, s = 60, color = 'blue', label = 'Final')
-plt.xlabel('x (AU)', fontsize = 18)
-plt.ylabel('y (AU)', fontsize = 18)
+E = specific_energy(u, du, M, h)
+print()
+print('Specific Energy')
+print(f'Initial specific energy: {E[0]:.3f}')
+print(f'Final specific energy: {E[-1]:.3f}')
+print(f'Maximum variation: {np.max(np.abs(E - E[0])):.2e}')
+
+#Convergence test
+def convergence_test(n_values):
+    precessions = []
+    for n_step in n_values:
+        phi_test, u_test, du_test, dx_test = RK4_2nd(dudphi, wrapped_dwdphi, initial_conditions, x_final=2*orbits*np.pi, n = n_step)
+        indices, _ = find_peaks(u_test)
+        indices = np.insert(indices, 0, 0)
+        perihelia_shift = np.diff(np.array(phi_test)[indices]) - 2*np.pi
+        precessions.append(np.mean(perihelia_shift))
+    return np.array([precessions])
+
+ns = np.array([5000, 10000, 20000, 40000, 80000, 100000])
+test = convergence_test(ns)
+
+
+plt.figure(figsize = [6,6])
+plt.plot(x, y, color = 'green', label = 'Trajectory')
+plt.scatter(x[0], y[0], color = 'red', label = 'Initial position', zorder = 10)
+plt.scatter(x[-1], y[-1], color = 'blue', label = 'Final position', zorder = 11)
+for i in peaks:
+    plt.scatter(x[i], y[i], color = 'orange', zorder = 9)
+plt.scatter(x[peaks[-1]], y[peaks[-1]], color = 'orange', label = 'Local minima')
+plt.plot([0, 50*np.cos(mean_precession)], [0, 50*np.sin(mean_precession)], 'r--', label = 'Test line')
+plt.plot(0, 0, 'ko', label = 'Central Mass at (0,0)')
+plt.title('Matter particle trajectory'
+        '\n'
+        'in Schwarzschild Metric', fontsize = 20)
+plt.xlabel('x', fontsize = 20)
+plt.ylabel('y', fontsize = 20)
+plt.axis("equal")
+plt.legend(loc = 'lower left')
+plt.tight_layout()
 plt.grid()
-plt.legend(loc = 'upper right')
+
+plt.figure()
+plt.plot(phi, E, '.', color = 'orange', label = r'$E(\phi)$')
+plt.xlabel(r'$\phi$', fontsize = 20)
+plt.ylabel(r'$E$', fontsize = 20)
+plt.title('Specific Energy', fontsize = 20)
+plt.legend()
+plt.tight_layout()
+plt.grid()
+
+plt.figure()
+plt.scatter(phi, np.log10(E), color = 'orange', label = r'$E(\phi)$')
+plt.xlabel(r'$\phi$', fontsize = 20)
+plt.ylabel(r'$\log_{10}(E)$', fontsize = 20)
+plt.title('Specific Energy, log scale', fontsize = 20)
+plt.legend()
+plt.tight_layout()
+plt.grid()
 plt.show()
 
