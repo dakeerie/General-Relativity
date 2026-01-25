@@ -6,4 +6,4 @@ I initially started this self-study project with the ambition to cover a differe
 
 I started the project by going over the basics of Special Relativity. The coding projects are contained in the folder titled "SR" and include a flat-space invariant interval calculator, a lorentz transform function, a collision simulator which uses a transformation to the CoM frame to calculate four-momenta after a collision of two point particles, and a Minkowski diagram generator which gives the coordinates of events in different reference frames.
 
-The folder "Schwarzschild Geodesics" contains code relating to the motion of matter and light in a Schwarzschild spacetime, namely a solver of the second order non-homogeneous equation of motion in $u(\phi) = \frac{1}{r}$ derived from the geodesic equation and the Schwarzschild metric.
+The folder "Schwarzschild Geodesics" contains code relating to the motion of matter and light in a Schwarzschild spacetime, namely a solver of the second order non-linear non-homogeneous ordinary differential equation of motion in $u(\phi) = \frac{1}{r}$ derived from the geodesic equation and the Schwarzschild metric.
