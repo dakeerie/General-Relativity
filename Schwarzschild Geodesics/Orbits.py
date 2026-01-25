@@ -1,36 +1,52 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from einsteinpy.geodesic import Timelike
 from scipy.constants import G, c
-from scipy.integrate import solve_ivp
 
-def system(s, y, M, h, object):
+def dudphi(phi, u, w):
+    return w 
 
-    if object == 'matter':
-        b = 1
-    elif object == 'photon':
-        b = 0
-    else:
-        raise ValueError("Object specification must be either 'matter' or 'photon'.")
-    u, dudphi = y
-    q = dudphi
-    dq = -u + b*M/h**2 +3*M*u**2
-    return [q, dq]
+def dwdphi(phi, u, w, M: float, h: float, b):
+    """b = 1 for matter, b = 0 for light"""
+    return -u + b*M/h**2 + 3*M*u**2
 
-u0 = 1/10
-du0 = 0
-y0 = [u0, du0]
+def RK4_2nd(f, g, IC, x_final, n):
+    x = [IC[0]]
+    y = [IC[1]]
+    dy = [IC[2]]
+    dx = (x_final - x[0])/n
+    dx_2 = dx/2
+    for i in range(n):
+        xi, yi, dyi = x[i], y[i], dy[i]
+        k0 = dx*f(xi, yi, dyi)
+        l0 = dx*g(x[i], y[i], dy[i])
+        k1 = dx*f(x[i] + dx_2, y[i] + k0/2, dy[i] + l0/2)
+        l1 = dx*g(x[i] + dx_2, y[i] + k0/2, dy[i] + l0/2)
+        k2 = dx*f(x[i] + dx_2, y[i] + k1/2, dy[i] + l1/2)
+        l2 = dx*g(x[i] + dx_2, y[i] + k1/2, dy[i] + l1/2)
+        k3 = dx*f(x[i] + dx, y[i] + k2, dy[i] + l2)
+        l3 = dx*g(x[i] + dx, y[i] + k2, dy[i] + l2)
+        x.append(x[i] + dx)
+        y.append(y[i] + (k0 + 2*k1 + 2*k2 + k3)/6)
+        dy.append(dy[i] + (l0 + 2*l1 + 2*l2 + l3)/6)
+    return x, y, dy
 
-phi_span = [0, 10*np.pi]
-phi_eval = np.linspace(phi_span[0], phi_span[1], 2000)
+#Parameters
+M = 1.0
+r0 = 20
+u0 = 1/r0
+#Circular orbit specific momentum
+h = np.sqrt(M/(u0 - 3*M*u0**2))
+b = 1.0
+orbits = 10
 
-sol = solve_ivp(system, phi_span, y0, 'DOP853', t_eval = phi_eval, args= (1, 4, 'matter'))
+wrapped_dwdphi = lambda phi, u, w: dwdphi(phi, u, w, M, h, b)
+initial_conditions = [0.0, u0 - 0.01, 0.0]
+phi, u, du = RK4_2nd(dudphi, wrapped_dwdphi, initial_conditions, x_final = 2*orbits*np.pi, n = 5000)
+phi = np.array(phi)
+u = np.array(u)
+du = np.array(du)
 
-phi = sol.t
-r = 1/sol.y[0]
-dudphi = sol.y[1]
-
+r = 1/u
 x = r*np.cos(phi)
 y = r*np.sin(phi)
 
