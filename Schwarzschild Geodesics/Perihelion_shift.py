@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import G, c
-from scipy.signal import find_peaks
 
 #Mercury-Sun system isn't relativistic enough to accurately calculate the precession
 #angle using RK4 so I'll make up a test system to show that the simulation works
@@ -36,7 +35,7 @@ def RK4_2nd(f, g, IC, x_final, n):
 
 #Simulation parameters
 M = 1.0
-r0 = 50 #far enough away that the analytical phi prediction should match simulation value
+r0 = 50 #far enough away that the analytical phi prediction should be close to simulation value
 u0 = 1/r0 #but close enough that precession is resolvable by RK4 method
 h = 8 #stable orbit 
 orbits = 10
@@ -86,17 +85,63 @@ print(f'Maximum variation: {np.max(np.abs(E - E[0])):.2e}')
 #Convergence test
 def convergence_test(n_values):
     precessions = []
+    dx_values = []
     for n_step in n_values:
-        phi_test, u_test, du_test, dx_test = RK4_2nd(dudphi, wrapped_dwdphi, initial_conditions, x_final=2*orbits*np.pi, n = n_step)
+        phi_test, u_test, du_test, dx_test = RK4_2nd(dudphi, wrapped_dwdphi, initial_conditions, x_final=2*orbits*np.pi, n=n_step)
+        dx_values.append(dx_test)
+
         indices, _ = find_peaks(u_test)
         indices = np.insert(indices, 0, 0)
-        perihelia_shift = np.diff(np.array(phi_test)[indices]) - 2*np.pi
-        precessions.append(np.mean(perihelia_shift))
-    return np.array([precessions])
+        
+        current_peaks = [] 
+        for i in indices:
+            # Only interpolate if there are neighbours
+            if 0 < i < len(u_test) - 1:
+                y1, y2, y3 = u_test[i - 1], u_test[i], u_test[i + 1]
+                denom = 2*(y1 - 2*y2 + y3)
+                if denom != 0:
+                    offset = dx_test*(y1 - y3)/denom
+                    current_peaks.append(phi_test[i] + offset)
+                else:
+                    current_peaks.append(phi_test[i])
+            else:
+                current_peaks.append(phi_test[i])
+        precessions.append(np.mean(np.diff(current_peaks) - 2*np.pi))  
+    return np.array(precessions), np.array(dx_values)
 
 ns = np.array([5000, 10000, 20000, 40000, 80000, 100000])
-test = convergence_test(ns)
+test, dxs = convergence_test(ns)
+errors = np.abs(test[:-1] - test[-1])
+dxs = dxs[:-1]
 
+print()
+print("Convergence Tests")
+slope = np.polyfit(np.log(dxs), np.log(errors), 1)[0]
+print(f"Precession measurement convergence rate (slope): {slope:.2f}")
+print("Convergence test uses quadratic interpolation which is second order so this affects the " \
+"slope and brings it towards 2, away from 4.")
+
+def energy_drift_test(n_values):
+    drifts = []
+    dx_values = []
+    for n_step in n_values:
+        phi_t, u_t, du_t, dx_t = RK4_2nd(dudphi, wrapped_dwdphi, initial_conditions, x_final=2*orbits*np.pi, n=n_step)
+        
+        # Calculate Energy at the very first and last point
+        E_start = specific_energy(u_t[0], du_t[0], M, h)
+        E_end = specific_energy(u_t[-1], du_t[-1], M, h)
+        
+        # The 'Error' is how much Energy was "lost" or "gained" due to numerical drift
+        drifts.append(np.abs(E_end - E_start))
+        dx_values.append(dx_t)
+        
+    return np.array(drifts), np.array(dx_values)
+
+# Use these for the plot
+n = [500, 1000, 1500, 2000, 2500]
+e_errors, e_dxs = energy_drift_test(n)
+e_slope = np.polyfit(np.log(e_dxs), np.log(e_errors), 1)[0]
+print(f"Energy measurement convergence rate (slope): {e_slope:.2f}")
 
 plt.figure(figsize = [6,6])
 plt.plot(x, y, color = 'green', label = 'Trajectory')
@@ -126,13 +171,32 @@ plt.legend()
 plt.tight_layout()
 plt.grid()
 
-plt.figure()
-plt.scatter(phi, np.log10(E), color = 'orange', label = r'$E(\phi)$')
-plt.xlabel(r'$\phi$', fontsize = 20)
-plt.ylabel(r'$\log_{10}(E)$', fontsize = 20)
-plt.title('Specific Energy, log scale', fontsize = 20)
+plt.figure(figsize=(8, 5))
+plt.loglog(dxs, errors, 'o-', label='Numerical Error')
+plt.loglog(dxs, (errors[0]/dxs[0]**4)*dxs**4, 'k--', alpha=0.5, label=r'Theoretical RK4 Slope $(\mathcal{O}(dx^4))$')
+plt.xlabel(r'Step Size ($\Delta \phi$)', fontsize=14)
+plt.ylabel(r'Precession Error $(rad)$', fontsize=14)
+plt.title('RK4 Convergence Test', fontsize=16)
 plt.legend()
-plt.tight_layout()
 plt.grid()
+
+plt.figure(figsize=(8, 5))
+plt.loglog(e_dxs, e_errors, 's-', label='Energy Drift')
+plt.loglog(e_dxs, (e_errors[0]/e_dxs[0]**4) * e_dxs**4, 'k--', alpha=0.5, label='Theoretical $O(dx^4)$')
+plt.title('Energy Conservation Convergence', fontsize=16)
+plt.xlabel(r'Step Size ($\Delta \phi$)', fontsize=14)
+plt.ylabel('Absolute Energy Drift', fontsize=14)
+plt.legend()
+plt.grid(True, which="both", alpha=0.3)
 plt.show()
+
+# plt.figure()
+# plt.scatter(phi, np.log10(E), color = 'orange', label = r'$E(\phi)$')
+# plt.xlabel(r'$\phi$', fontsize = 20)
+# plt.ylabel(r'$\log_{10}(E)$', fontsize = 20)
+# plt.title('Specific Energy, log scale', fontsize = 20)
+# plt.legend()
+# plt.tight_layout()
+# plt.grid()
+# plt.show()
 
