@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import G, c
+from scipy.signal import find_peaks
 
 #Mercury-Sun system isn't relativistic enough to accurately calculate the precession
 #angle using RK4 so I'll make up a test system to show that the simulation works
